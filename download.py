@@ -10,7 +10,7 @@ with open('video_urls.txt', 'r') as f:
 NUMBER_OF_PARALLEL_DOWNLOADS = 4
 
 # Number of retries for each download
-DOWNLOAD_RETRIES = 3
+MAX_DOWNLOAD_RETRIES = 3
 
 # Create a semaphore with a value of NUMBER_OF_PARALLEL_DOWNLOADS
 semaphore = threading.Semaphore(NUMBER_OF_PARALLEL_DOWNLOADS)
@@ -27,8 +27,8 @@ def download_video(url):
     youtube = YouTube(url)
 
     # Retry the download up to DOWNLOAD_RETRIES times if there's an error
-    num_retries = DOWNLOAD_RETRIES
-    while num_retries > 0:
+    remaining_download_retries = MAX_DOWNLOAD_RETRIES
+    while remaining_download_retries > 0:
         try:
             # Get the first available video stream with the highest resolution
             video = youtube.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
@@ -44,10 +44,10 @@ def download_video(url):
             break
         except KeyError as e:
             print(f"Error downloading video: {url} {e}. Retrying.")
-            num_retries -= 1
+            remaining_download_retries -= 1
         except Exception as e:
             print(f"Error downloading video: {video.default_filename} {e}. Retrying.")
-            num_retries -= 1
+            remaining_download_retries -= 1
 
     # Release the semaphore when the download is finished or retries have been exhausted
     semaphore.release()
